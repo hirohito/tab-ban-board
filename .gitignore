@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Build output (run `npm run build` to regenerate)
+dist/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+*.log

@@ -1,0 +1,82 @@
+# Tab-Ban Board
+
+**Kanban for your tabs.**
+
+Tab-Ban Board is a Chrome extension that replaces your new tab page with a Kanban-style board of everything you have open — **one column per root domain**, scrolling horizontally. All your GitHub tabs in one column, all your Google tabs in the next, your localhost dev servers in their own.
+
+A Kanban remix of [Tab Out](https://github.com/zarazhangrui/tab-out) by [Zara](https://x.com/zarazhangrui), with a UI built on [shadcn/ui](https://ui.shadcn.com).
+
+No server. No account. No external API calls at runtime.
+
+---
+
+## The board
+
+- Columns are **root domains** (`mail.google.com` and `docs.google.com` both land in `google.com`), sorted busiest-first
+- Hosting platforms are handled sensibly: `alice.github.io` and `bob.github.io` get **separate** columns
+- `localhost` gets its own column with **port badges** so you can tell your dev servers apart
+- The board **scrolls horizontally** — as many columns as you have domains
+
+## Features
+
+- **Click any card to jump to that tab** across windows, no new tab opened
+- **Close a single tab** or **close a whole domain column** in one click — with the swoosh sound + confetti burst carried over from Tab Out
+- **Duplicate detection**: pages open more than once collapse into one card with a ×N badge, plus a one-click "keep one of each" cleanup banner
+- **Live updates** — the board repaints as tabs open, close, and navigate
+- **Light & dark mode**, following your system preference
+- **100% local at runtime** — favicons come from Chrome's own cache, fonts are bundled, your data never leaves your machine
+- **Toolbar badge** with a color-coded open-tab count (green ≤ 10, amber ≤ 20, red beyond)
+
+---
+
+## Install
+
+**1. Clone and build**
+
+```bash
+git clone https://github.com/hirohitoyamada/tab-ban-board.git
+cd tab-ban-board
+npm install
+npm run build
+```
+
+**2. Load the Chrome extension**
+
+1. Open Chrome and go to `chrome://extensions`
+2. Enable **Developer mode** (top-right toggle)
+3. Click **Load unpacked**
+4. Select the `dist/` folder inside the repo
+
+**3. Open a new tab**
+
+You'll see your board.
+
+---
+
+## Development
+
+```bash
+npm run dev
+```
+
+Outside the extension context there is no `chrome.tabs`, so the dev server renders a set of demo tabs — handy for working on the UI. Rebuild with `npm run build` and reload the extension at `chrome://extensions` to test the real thing.
+
+---
+
+## Tech stack
+
+| What | How |
+|------|-----|
+| Extension | Chrome Manifest V3 (new tab override + badge service worker) |
+| UI | React 19 + [shadcn/ui](https://ui.shadcn.com) (Card, Item, Alert, Badge, ScrollArea, Empty, sonner) |
+| Styling | Tailwind CSS v4, semantic tokens, system light/dark |
+| Build | Vite → static `dist/`, all assets bundled (no CDN, no remote fonts) |
+| Favicons | Chrome's built-in `_favicon` cache (no external requests) |
+| Sound | Web Audio API (synthesized swoosh, no files) |
+| Confetti | Plain DOM particles, no libraries |
+
+---
+
+## License
+
+MIT — based on [Tab Out](https://github.com/zarazhangrui/tab-out), MIT © Zara.
