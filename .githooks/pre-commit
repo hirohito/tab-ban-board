@@ -1,0 +1,25 @@
+#!/bin/sh
+# Auto-rebuild the committed extension so dist/ can never drift from source.
+#
+# Runs only when staged changes touch build inputs (source, assets, HTML, or
+# build config). Rebuilds, then stages the regenerated dist/ into this commit.
+# A failed build aborts the commit.
+#
+# Enabled automatically via `npm install` (see the "prepare" script in
+# package.json), or manually with:  git config core.hooksPath .githooks
+
+# Files that affect the build output. If none are staged, skip the rebuild.
+if git diff --cached --name-only | grep -Eq '^(src/|public/|index\.html|vite\.config\.ts|tsconfig.*\.json|components\.json|package(-lock)?\.json)'; then
+  echo "pre-commit: source changed — rebuilding dist/…"
+
+  if ! npm run build >/tmp/tab-ban-board-build.log 2>&1; then
+    echo "pre-commit: build FAILED — commit aborted. Output:" >&2
+    cat /tmp/tab-ban-board-build.log >&2
+    exit 1
+  fi
+
+  git add dist
+  echo "pre-commit: dist/ rebuilt and staged."
+fi
+
+exit 0

@@ -65,7 +65,9 @@ npm run dev
 
 Outside the extension context there is no `chrome.tabs`, so the dev server renders a set of demo tabs — handy for working on the UI. Rebuild with `npm run build` and reload the extension at `chrome://extensions` to test the real thing.
 
-When committing changes, **rebuild first** (`npm run build`) so the committed `dist/` stays in sync with the source. Use `npm run package` to produce a versioned `.zip` for the Chrome Web Store.
+A **pre-commit hook** keeps the committed `dist/` in sync automatically: whenever you commit changes to the source, it rebuilds and stages `dist/` for you (a failed build aborts the commit). It's enabled automatically the first time you run `npm install`; to enable it manually, run `git config core.hooksPath .githooks`.
+
+Use `npm run package` to produce a versioned `.zip` for the Chrome Web Store.
 
 ---
 
