@@ -9,7 +9,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "package": "npm run build && cd dist && zip -rq \"../tab-ban-board-v$(node -p \"require('./manifest.json').version\").zip\" . -x '.*'"
+    "package": "npm run build && cd extension && zip -rq \"../tab-ban-board-v$(node -p \"require('./manifest.json').version\").zip\" . -x '.*'"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",

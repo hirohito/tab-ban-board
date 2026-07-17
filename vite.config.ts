@@ -14,7 +14,8 @@ export default defineConfig({
     },
   },
   build: {
-    // dist/ is what users load via "Load unpacked"
-    outDir: 'dist',
+    // extension/ is what users load via "Load unpacked"
+    outDir: 'extension',
+    emptyOutDir: true,
   },
 })

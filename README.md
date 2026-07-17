@@ -44,7 +44,7 @@ git clone https://github.com/hirohito/tab-ban-board.git
 1. Open Chrome and go to `chrome://extensions`
 2. Enable **Developer mode** (top-right toggle)
 3. Click **Load unpacked**
-4. Select the **`dist/`** folder inside the repo
+4. Select the **`extension/`** folder inside the repo
 
 **3. Open a new tab**
 
@@ -56,7 +56,7 @@ You'll see your board.
 
 ## Development
 
-Only needed if you want to change the code (end users can skip this — the built `dist/` is already committed).
+Only needed if you want to change the code (end users can skip this — the built `extension/` is already committed).
 
 ```bash
 npm install
@@ -65,7 +65,7 @@ npm run dev
 
 Outside the extension context there is no `chrome.tabs`, so the dev server renders a set of demo tabs — handy for working on the UI. Rebuild with `npm run build` and reload the extension at `chrome://extensions` to test the real thing.
 
-A **pre-commit hook** keeps the committed `dist/` in sync automatically: whenever you commit changes to the source, it rebuilds and stages `dist/` for you (a failed build aborts the commit). It's enabled automatically the first time you run `npm install`; to enable it manually, run `git config core.hooksPath .githooks`.
+A **pre-commit hook** keeps the committed `extension/` in sync automatically: whenever you commit changes to the source, it rebuilds and stages `extension/` for you (a failed build aborts the commit). It's enabled automatically the first time you run `npm install`; to enable it manually, run `git config core.hooksPath .githooks`.
 
 Use `npm run package` to produce a versioned `.zip` for the Chrome Web Store.
 
@@ -78,7 +78,7 @@ Use `npm run package` to produce a versioned `.zip` for the Chrome Web Store.
 | Extension | Chrome Manifest V3 (new tab override + badge service worker) |
 | UI | React 19 + [shadcn/ui](https://ui.shadcn.com) (Card, Item, Alert, Badge, ScrollArea, Empty, sonner) |
 | Styling | Tailwind CSS v4, semantic tokens, system light/dark |
-| Build | Vite → static `dist/`, all assets bundled (no CDN, no remote fonts) |
+| Build | Vite → static `extension/`, all assets bundled (no CDN, no remote fonts) |
 | Favicons | Chrome's built-in `_favicon` cache (no external requests) |
 | Sound | Web Audio API (synthesized swoosh, no files) |
 | Confetti | Plain DOM particles, no libraries |

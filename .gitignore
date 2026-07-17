@@ -1,7 +1,7 @@
 # Dependencies
 node_modules/
 
-# Prebuilt extension (dist/) is intentionally committed so users can
+# Prebuilt extension (extension/) is intentionally committed so users can
 # clone and Load unpacked without a build step. Regenerate with `npm run build`.
 
 # Packaged extension archives (run `npm run package` to regenerate)
