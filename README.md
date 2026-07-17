@@ -34,7 +34,7 @@ No server. No account. No external API calls at runtime.
 **1. Clone and build**
 
 ```bash
-git clone https://github.com/hirohitoyamada/tab-ban-board.git
+git clone https://github.com/hirohito/tab-ban-board.git
 cd tab-ban-board
 npm install
 npm run build
@@ -79,4 +79,6 @@ Outside the extension context there is no `chrome.tabs`, so the dev server rende
 
 ## License
 
-MIT — based on [Tab Out](https://github.com/zarazhangrui/tab-out), MIT © Zara.
+MIT © 2026 Hiro Yamada.
+
+This project is a derivative work of [Tab Out](https://github.com/zarazhangrui/tab-out) (MIT © Zara Zhang), whose original copyright and license terms are preserved in [`LICENSE`](./LICENSE).
