@@ -31,13 +31,12 @@ No server. No account. No external API calls at runtime.
 
 ## Install
 
-**1. Clone and build**
+The built extension is committed to this repo, so there's **nothing to build** — just clone and load it.
+
+**1. Clone (or [download the ZIP](https://github.com/hirohito/tab-ban-board/archive/refs/heads/main.zip) and unzip)**
 
 ```bash
 git clone https://github.com/hirohito/tab-ban-board.git
-cd tab-ban-board
-npm install
-npm run build
 ```
 
 **2. Load the Chrome extension**
@@ -45,21 +44,28 @@ npm run build
 1. Open Chrome and go to `chrome://extensions`
 2. Enable **Developer mode** (top-right toggle)
 3. Click **Load unpacked**
-4. Select the `dist/` folder inside the repo
+4. Select the **`dist/`** folder inside the repo
 
 **3. Open a new tab**
 
 You'll see your board.
 
+> Using a coding agent? Point it at this repo and say *"install this extension"* — it can run the two steps above for you.
+
 ---
 
 ## Development
 
+Only needed if you want to change the code (end users can skip this — the built `dist/` is already committed).
+
 ```bash
+npm install
 npm run dev
 ```
 
 Outside the extension context there is no `chrome.tabs`, so the dev server renders a set of demo tabs — handy for working on the UI. Rebuild with `npm run build` and reload the extension at `chrome://extensions` to test the real thing.
+
+When committing changes, **rebuild first** (`npm run build`) so the committed `dist/` stays in sync with the source. Use `npm run package` to produce a versioned `.zip` for the Chrome Web Store.
 
 ---
 

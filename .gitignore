@@ -1,8 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build output (run `npm run build` to regenerate)
-dist/
+# Prebuilt extension (dist/) is intentionally committed so users can
+# clone and Load unpacked without a build step. Regenerate with `npm run build`.
 
 # Packaged extension archives (run `npm run package` to regenerate)
 *.zip
