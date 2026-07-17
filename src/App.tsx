@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { CopyX, LayoutDashboard, X } from 'lucide-react'
+import { CopyX, Layers, LayoutDashboard, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -41,15 +41,43 @@ import {
   closeTabs,
   faviconUrl,
   fetchOpenTabs,
+  fetchTabGroups,
   focusTab,
   onTabsChanged,
+  TAB_GROUP_NONE,
   type OpenTab,
+  type TabGroup,
 } from '@/lib/tabs'
 
-/** One board column: every open tab sharing a root domain. */
-interface DomainColumn {
-  domain: string
-  tabs: OpenTab[]
+/**
+ * A board column. Tabs are organised with this priority:
+ *   1. `group`  — tabs in a Chrome native tab group (name + colour)
+ *   2. `domain` — remaining tabs sharing a root domain (2+ tabs)
+ *   3. `other`  — every single-tab domain, collapsed into one column
+ */
+type BoardColumn =
+  | { kind: 'group'; key: string; group: TabGroup; tabs: OpenTab[] }
+  | { kind: 'domain'; key: string; domain: string; tabs: OpenTab[] }
+  | { kind: 'other'; key: 'other'; tabs: OpenTab[] }
+
+/** Collapse single-tab domains into "Other" only once there are this many. */
+const SINGLETON_COLLAPSE_MIN = 2
+
+/** Chrome tab-group colour names → CSS colours for the column accent. */
+const GROUP_COLORS: Record<string, string> = {
+  grey: '#5f6368',
+  blue: '#1a73e8',
+  red: '#d93025',
+  yellow: '#f9ab00',
+  green: '#188038',
+  pink: '#d01884',
+  purple: '#a142f4',
+  cyan: '#007b83',
+  orange: '#fa903e',
+}
+
+function groupColor(color: string): string {
+  return GROUP_COLORS[color] ?? GROUP_COLORS.grey
 }
 
 type ClosePoint = { x: number; y: number }
@@ -72,9 +100,15 @@ function getDateDisplay(): string {
 
 export default function App() {
   const [tabs, setTabs] = useState<OpenTab[]>([])
+  const [groups, setGroups] = useState<Map<number, TabGroup>>(new Map())
 
   const refresh = useCallback(async () => {
-    setTabs(await fetchOpenTabs())
+    const [nextTabs, nextGroups] = await Promise.all([
+      fetchOpenTabs(),
+      fetchTabGroups(),
+    ])
+    setTabs(nextTabs)
+    setGroups(nextGroups)
   }, [])
 
   // Initial load + live updates when tabs change elsewhere in the
@@ -93,22 +127,74 @@ export default function App() {
     }
   }, [refresh])
 
-  // Group tabs into columns by root domain, busiest columns first
-  const columns = useMemo<DomainColumn[]>(() => {
-    const byDomain = new Map<string, OpenTab[]>()
+  // Build the board columns in priority order:
+  //   Chrome tab groups → root domains (2+ tabs) → one "Other" column
+  const board = useMemo<BoardColumn[]>(() => {
+    // 1. Pull out tabs that belong to a Chrome native tab group
+    const byGroup = new Map<number, OpenTab[]>()
+    const ungrouped: OpenTab[] = []
     for (const tab of tabs) {
+      if (tab.groupId !== TAB_GROUP_NONE && groups.has(tab.groupId)) {
+        const g = byGroup.get(tab.groupId)
+        if (g) g.push(tab)
+        else byGroup.set(tab.groupId, [tab])
+      } else {
+        ungrouped.push(tab)
+      }
+    }
+    const groupColumns: BoardColumn[] = [...byGroup.entries()]
+      .map(([id, groupTabs]) => ({
+        kind: 'group' as const,
+        key: `group-${id}`,
+        group: groups.get(id)!,
+        tabs: groupTabs,
+      }))
+      .sort(
+        (a, b) =>
+          b.tabs.length - a.tabs.length ||
+          a.group.title.localeCompare(b.group.title),
+      )
+
+    // 2. Group the rest by root domain, busiest first
+    const byDomain = new Map<string, OpenTab[]>()
+    for (const tab of ungrouped) {
       const domain = rootDomain(tab.url)
       const group = byDomain.get(domain)
       if (group) group.push(tab)
       else byDomain.set(domain, [tab])
     }
-    return [...byDomain.entries()]
+    const domainGroups = [...byDomain.entries()]
       .map(([domain, domainTabs]) => ({ domain, tabs: domainTabs }))
       .sort(
         (a, b) =>
           b.tabs.length - a.tabs.length || a.domain.localeCompare(b.domain),
       )
-  }, [tabs])
+
+    // 3. Collapse single-tab domains into one "Other" column
+    const singles = domainGroups.filter(g => g.tabs.length === 1)
+    const collapse = singles.length >= SINGLETON_COLLAPSE_MIN
+    const domainColumns: BoardColumn[] = (
+      collapse ? domainGroups.filter(g => g.tabs.length > 1) : domainGroups
+    ).map(g => ({
+      kind: 'domain' as const,
+      key: `domain-${g.domain}`,
+      domain: g.domain,
+      tabs: g.tabs,
+    }))
+    const otherColumn: BoardColumn[] = collapse
+      ? [
+          {
+            kind: 'other' as const,
+            key: 'other',
+            tabs: singles
+              .map(s => s.tabs[0])
+              .sort((a, b) => rootDomain(a.url).localeCompare(rootDomain(b.url))),
+          },
+        ]
+      : []
+
+    return [...groupColumns, ...domainColumns, ...otherColumn]
+  }, [tabs, groups])
 
   // How many times each URL is open, for the ×N badges and the banner
   const dupeCounts = useMemo(() => {
@@ -165,7 +251,7 @@ export default function App() {
             {tabs.length} tab{tabs.length === 1 ? '' : 's'}
           </Badge>
           <Badge variant="outline" className="tabular-nums">
-            {columns.length} domain{columns.length === 1 ? '' : 's'}
+            {board.length} column{board.length === 1 ? '' : 's'}
           </Badge>
         </div>
       </header>
@@ -197,7 +283,7 @@ export default function App() {
 
       {/* ── The board — one column per root domain, scrolls sideways ── */}
       <main className="min-h-0 flex-1">
-        {columns.length === 0 ? (
+        {board.length === 0 ? (
           <Empty className="h-full">
             <EmptyHeader>
               <EmptyMedia variant="icon">
@@ -213,9 +299,9 @@ export default function App() {
         ) : (
           <ScrollArea className="h-full **:data-[slot=scroll-area-viewport]:*:h-full">
             <div className="flex h-full items-stretch gap-4 p-6">
-              {columns.map(column => (
-                <DomainColumnCard
-                  key={column.domain}
+              {board.map(column => (
+                <BoardColumnCard
+                  key={column.key}
                   column={column}
                   dupeCounts={dupeCounts}
                   onCloseTabs={closeWithFx}
@@ -251,15 +337,48 @@ export default function App() {
 }
 
 /* ────────────────────────────────────────────────────────────────
-   One Kanban column: a root domain and its open tabs
+   One Kanban column — a Chrome tab group, a root domain, or "Other"
    ──────────────────────────────────────────────────────────────── */
 
-function DomainColumnCard({
+/** How a column presents itself, derived from its kind. */
+function columnHeader(column: BoardColumn): {
+  title: string
+  accent?: string
+  closeLabel: string
+  closeMessage: (n: number) => string
+} {
+  switch (column.kind) {
+    case 'group': {
+      const title = column.group.title || 'Unnamed group'
+      return {
+        title,
+        accent: groupColor(column.group.color),
+        closeLabel: `Close ${title} group`,
+        closeMessage: n => `Closed ${n} tab${n === 1 ? '' : 's'} in ${title}`,
+      }
+    }
+    case 'other':
+      return {
+        title: 'Other',
+        closeLabel: 'Close all single-tab sites',
+        closeMessage: n => `Closed ${n} tab${n === 1 ? '' : 's'}`,
+      }
+    case 'domain':
+      return {
+        title: column.domain,
+        closeLabel: `Close all ${column.domain} tabs`,
+        closeMessage: n =>
+          `Closed ${n} ${column.domain} tab${n === 1 ? '' : 's'}`,
+      }
+  }
+}
+
+function BoardColumnCard({
   column,
   dupeCounts,
   onCloseTabs,
 }: {
-  column: DomainColumn
+  column: BoardColumn
   dupeCounts: Map<string, number>
   onCloseTabs: (
     ids: number[],
@@ -268,9 +387,8 @@ function DomainColumnCard({
   ) => Promise<void>
 }) {
   const cardRef = useRef<HTMLDivElement>(null)
-
-  // Column favicon: sample the first tab (all share the root domain)
-  const icon = faviconUrl(column.tabs[0].url)
+  const { title, accent, closeLabel, closeMessage } = columnHeader(column)
+  const isOther = column.kind === 'other'
 
   // One card per URL — duplicates collapse into a ×N badge
   const uniqueTabs = useMemo(() => {
@@ -290,7 +408,7 @@ function DomainColumnCard({
     onCloseTabs(
       column.tabs.map(t => t.id),
       point,
-      `Closed ${column.tabs.length} ${column.domain} tab${column.tabs.length === 1 ? '' : 's'}`,
+      closeMessage(column.tabs.length),
     )
   }
 
@@ -298,16 +416,31 @@ function DomainColumnCard({
     <Card
       ref={cardRef}
       className="flex max-h-full w-80 shrink-0 flex-col self-start"
+      style={accent ? { borderTopColor: accent, borderTopWidth: 3 } : undefined}
     >
       <CardHeader className="shrink-0">
         <CardTitle className="flex min-w-0 items-center gap-2">
-          {icon && (
-            <img src={icon} alt="" className="size-4 shrink-0 rounded-sm" />
+          {column.kind === 'group' ? (
+            <span
+              className="size-3 shrink-0 rounded-full"
+              style={{ backgroundColor: accent }}
+              aria-hidden
+            />
+          ) : column.kind === 'other' ? (
+            <Layers className="text-muted-foreground size-4 shrink-0" aria-hidden />
+          ) : (
+            <img
+              src={faviconUrl(column.tabs[0].url)}
+              alt=""
+              className="size-4 shrink-0 rounded-sm"
+            />
           )}
-          <span className="truncate">{column.domain}</span>
+          <span className="truncate">{title}</span>
         </CardTitle>
         <CardDescription>
-          {column.tabs.length} tab{column.tabs.length === 1 ? '' : 's'}
+          {isOther
+            ? `${column.tabs.length} single-tab site${column.tabs.length === 1 ? '' : 's'}`
+            : `${column.tabs.length} tab${column.tabs.length === 1 ? '' : 's'}`}
         </CardDescription>
         <CardAction>
           <Tooltip>
@@ -315,13 +448,13 @@ function DomainColumnCard({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label={`Close all ${column.domain} tabs`}
+                aria-label={closeLabel}
                 onClick={closeColumn}
               >
                 <X />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Close all {column.domain} tabs</TooltipContent>
+            <TooltipContent>{closeLabel}</TooltipContent>
           </Tooltip>
         </CardAction>
       </CardHeader>

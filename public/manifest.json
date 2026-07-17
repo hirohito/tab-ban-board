@@ -3,7 +3,7 @@
   "name": "Tab-Ban Board",
   "version": "1.0.0",
   "description": "Kanban for your tabs. New tab page that lays out your open tabs as a board with one column per root domain.",
-  "permissions": ["tabs", "activeTab", "favicon"],
+  "permissions": ["tabs", "activeTab", "favicon", "tabGroups"],
   "chrome_url_overrides": { "newtab": "index.html" },
   "background": { "service_worker": "background.js" },
   "action": {

@@ -12,10 +12,17 @@ No server. No account. No external API calls at runtime.
 
 ## The board
 
-- Columns are **root domains** (`mail.google.com` and `docs.google.com` both land in `google.com`), sorted busiest-first
+Columns are laid out in priority order:
+
+1. **Chrome tab groups first** — any tab in one of Chrome's native tab groups keeps that grouping, shown as a column with the group's **name and colour**
+2. **Then root domains** — remaining tabs group by domain (`mail.google.com` and `docs.google.com` both land in `google.com`), sorted busiest-first
+3. **Then "Other"** — every domain with just a single tab collapses into one **Other** column, so a pile of one-off tabs doesn't spread the board across the screen
+
+Other niceties:
+
 - Hosting platforms are handled sensibly: `alice.github.io` and `bob.github.io` get **separate** columns
 - `localhost` gets its own column with **port badges** so you can tell your dev servers apart
-- The board **scrolls horizontally** — as many columns as you have domains
+- The board **scrolls horizontally** — as many columns as you need
 
 ## Features
 
