@@ -4,6 +4,9 @@ node_modules/
 # Build output (run `npm run build` to regenerate)
 dist/
 
+# Packaged extension archives (run `npm run package` to regenerate)
+*.zip
+
 # macOS
 .DS_Store
 
